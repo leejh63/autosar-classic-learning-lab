@@ -11,9 +11,27 @@ const Board_DioChannelConfigType Board_DioChannels[BOARD_DIO_CHANNEL_COUNT] =
 {
     {
         .channel_id = BOARD_DIO_LED1,
-        .symbolic_name = "LED1",
+        .symbolic_name = "Red",
+        .port = VHW_PORT_PTD,
+        .pin = 0u,
+        .direction = VHW_PIN_OUTPUT,
+        .active_polarity = VHW_ACTIVE_HIGH,
+        .initial_level = FALSE
+    },
+    {
+        .channel_id = BOARD_DIO_LED2,
+        .symbolic_name = "Blue",
         .port = VHW_PORT_PTD,
         .pin = 15u,
+        .direction = VHW_PIN_OUTPUT,
+        .active_polarity = VHW_ACTIVE_HIGH,
+        .initial_level = FALSE
+    },
+    {
+        .channel_id = BOARD_DIO_LED3,
+        .symbolic_name = "Green",
+        .port = VHW_PORT_PTD,
+        .pin = 16u,
         .direction = VHW_PIN_OUTPUT,
         .active_polarity = VHW_ACTIVE_HIGH,
         .initial_level = FALSE

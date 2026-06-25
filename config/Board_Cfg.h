@@ -8,9 +8,11 @@
 
 /* DIO symbolic channel IDs */
 #define BOARD_DIO_LED1       (0u)
-#define BOARD_DIO_BUTTON1    (1u)
-#define BOARD_DIO_DEBUG_PIN  (2u)
-#define BOARD_DIO_CHANNEL_COUNT (3u)
+#define BOARD_DIO_LED2       (1u)
+#define BOARD_DIO_LED3       (2u)
+#define BOARD_DIO_BUTTON1    (3u)
+#define BOARD_DIO_DEBUG_PIN  (4u)
+#define BOARD_DIO_CHANNEL_COUNT (5u)
 
 /* ADC symbolic channel IDs */
 #define BOARD_ADC_POT1       (0u)

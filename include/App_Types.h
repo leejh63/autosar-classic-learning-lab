@@ -15,6 +15,21 @@ typedef enum
 
 typedef enum
 {
+    RGB_COMMAND_OFF = 0,
+    RGB_COMMAND_RED,
+    RGB_COMMAND_GREEN,
+    RGB_COMMAND_BLUE
+} RgbCommandType;
+
+typedef struct
+{
+    LedStateType red;
+    LedStateType green;
+    LedStateType blue;
+} RgbLedStateType;
+
+typedef enum
+{
     BUTTON_STATE_RELEASED = 0,
     BUTTON_STATE_PRESSED  = 1
 } ButtonStateType;
