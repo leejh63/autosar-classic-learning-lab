@@ -17,15 +17,15 @@ typedef enum
 {
     RGB_COMMAND_OFF = 0,
     RGB_COMMAND_RED,
+    RGB_COMMAND_BLUE,
     RGB_COMMAND_GREEN,
-    RGB_COMMAND_BLUE
 } RgbCommandType;
 
 typedef struct
 {
     LedStateType red;
-    LedStateType green;
     LedStateType blue;
+    LedStateType green;
 } RgbLedStateType;
 
 typedef enum
