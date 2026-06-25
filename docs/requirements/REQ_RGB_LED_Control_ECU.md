@@ -13,7 +13,7 @@
 | 항목 | 정의 |
 |---|---|
 | 입력 | `RgbCommand` |
-| 논리 출력 | `RgbLedState.red`, `RgbLedState.green`, `RgbLedState.blue` |
+| 논리 출력 | `RgbLedState.red`, `RgbLedState.blue`, `RgbLedState.green` |
 | 하드웨어 출력 | `BOARD_DIO_LED1`, `BOARD_DIO_LED2`, `BOARD_DIO_LED3` 가상 DIO level |
 | 실행 주기 | 100 ms |
 
@@ -29,7 +29,7 @@
 
 ### REQ-RGB-F-001: RGB OFF 명령 처리
 
-`RgbCommand`가 `RGB_COMMAND_OFF`이면 `RgbLedState.red`, `RgbLedState.green`, `RgbLedState.blue`는 모두 `LED_STATE_OFF`이어야 한다.
+`RgbCommand`가 `RGB_COMMAND_OFF`이면 `RgbLedState.red`, `RgbLedState.blue`, `RgbLedState.green`은 모두 `LED_STATE_OFF`이어야 한다.
 
 ### REQ-RGB-F-002: RGB RED 명령 처리
 

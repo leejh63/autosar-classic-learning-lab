@@ -31,7 +31,7 @@ VirtualHw
 
 | 모듈 | 책임 |
 |---|---|
-| `Swc_RgbLedControl` | RGB 명령을 읽고 red, green, blue 논리 LED 상태를 결정한다. |
+| `Swc_RgbLedControl` | RGB 명령을 읽고 red, blue, green 논리 LED 상태를 결정한다. |
 | `Rte` | RGB SWC 입력/출력 buffer를 제공한다. |
 | `IoHwAb` | RGB 논리 LED 상태를 보드 DIO channel level로 변환한다. |
 | `Dio` | DIO channel 접근 API를 제공하고 VirtualHw에 위임한다. |
@@ -53,18 +53,18 @@ RGB LED는 현재 `Board_Cfg.c`의 DIO output channel 3개를 사용한다.
 
 ## 5. 주기 처리 순서
 
-RGB vertical slice에서 `Ecu_MainFunction_100ms()`는 다음 순서로 동작한다.
+RGB vertical slice에서 `Ecu_MainFunction_Rgb_100ms()`는 다음 순서로 동작한다.
 
 ```text
-Ecu_MainFunction_100ms()
+Ecu_MainFunction_Rgb_100ms()
   1. IoHwAb_UpdateInputs()
   2. Swc_RgbLedControl_Runnable_100ms()
-  3. IoHwAb_UpdateOutputs()
+  3. IoHwAb_UpdateRgbOutputs()
 ```
 
 기존 단일 LED vertical slice는 `BOARD_DIO_LED1`을 사용한다. RGB vertical slice도 red 출력으로 `BOARD_DIO_LED1`을 사용하므로, 두 기능이 같은 주기에서 동시에 같은 DIO channel을 제어하지 않도록 한다.
 
-RGB vertical slice 구현 단계에서는 RGB 기능이 `BOARD_DIO_LED1`, `BOARD_DIO_LED2`, `BOARD_DIO_LED3` 출력 소유권을 가진다. 기존 단일 LED 기능은 이전 학습 baseline으로 유지하되, RGB module test에서는 RGB runnable과 RGB 출력 변환만 검증한다.
+RGB vertical slice 구현 단계에서는 RGB 기능이 `BOARD_DIO_LED1`, `BOARD_DIO_LED2`, `BOARD_DIO_LED3` 출력 소유권을 가진다. 기존 단일 LED 기능은 이전 학습 baseline으로 유지하되, RGB module test에서는 `Ecu_MainFunction_Rgb_100ms()`를 사용해 RGB runnable과 RGB 출력 변환만 검증한다.
 
 ## 6. RTE 설계
 
@@ -73,6 +73,17 @@ RTE는 RGB 기능을 위해 다음 buffer와 API를 제공한다.
 ```text
 RgbCommand input buffer
 RgbLedState output buffer
+```
+
+`RgbLedStateType`의 component 순서는 코드의 타입 정의와 동일하게 다음 순서를 사용한다.
+
+```c
+typedef struct
+{
+    LedStateType red;
+    LedStateType blue;
+    LedStateType green;
+} RgbLedStateType;
 ```
 
 예상 API는 다음과 같다.
@@ -103,18 +114,18 @@ Rte_Write_Pp_RgbLedState()
 
 명령별 논리 상태는 다음과 같다.
 
-| RgbCommand | red | green | blue |
+| RgbCommand | red | blue | green |
 |---|---|---|---|
 | `RGB_COMMAND_OFF` | `LED_STATE_OFF` | `LED_STATE_OFF` | `LED_STATE_OFF` |
 | `RGB_COMMAND_RED` | `LED_STATE_ON` | `LED_STATE_OFF` | `LED_STATE_OFF` |
-| `RGB_COMMAND_GREEN` | `LED_STATE_OFF` | `LED_STATE_ON` | `LED_STATE_OFF` |
-| `RGB_COMMAND_BLUE` | `LED_STATE_OFF` | `LED_STATE_OFF` | `LED_STATE_ON` |
+| `RGB_COMMAND_BLUE` | `LED_STATE_OFF` | `LED_STATE_ON` | `LED_STATE_OFF` |
+| `RGB_COMMAND_GREEN` | `LED_STATE_OFF` | `LED_STATE_OFF` | `LED_STATE_ON` |
 
 SWC는 `Dio_WriteChannel()`, `VirtualHw_WriteDioChannel()`을 직접 호출하지 않는다.
 
 ## 8. IoHwAb 설계
 
-`IoHwAb_UpdateOutputs()`는 RGB 기능 추가 후 다음 출력 변환을 수행한다.
+`IoHwAb_UpdateRgbOutputs()`는 RGB 기능 추가 후 다음 출력 변환을 수행한다.
 
 ```text
 Rte_Bsw_Read_RgbLedState()
@@ -143,14 +154,14 @@ Dio_WriteChannel(BOARD_DIO_LED3, green_level)
 
 | Test Case ID | 검증 대상 |
 |---|---|
-| TC-RGB-U-001 | `RGB_COMMAND_OFF`이면 red, green, blue가 모두 OFF |
+| TC-RGB-U-001 | `RGB_COMMAND_OFF`이면 red, blue, green이 모두 OFF |
 | TC-RGB-U-002 | `RGB_COMMAND_RED`이면 red만 ON |
 | TC-RGB-U-003 | `RGB_COMMAND_GREEN`이면 green만 ON |
 | TC-RGB-U-004 | `RGB_COMMAND_BLUE`이면 blue만 ON |
 
 ### Module test
 
-RGB module test는 `Ecu_MainFunction_100ms()` 실행 후 `Dio_ReadChannel()` 또는 VirtualHw 관찰 API를 통해 DIO level을 검증한다.
+RGB module test는 `Ecu_MainFunction_Rgb_100ms()` 실행 후 `Dio_ReadChannel()` 또는 VirtualHw 관찰 API를 통해 DIO level을 검증한다.
 
 | Test Case ID | 검증 대상 |
 |---|---|
