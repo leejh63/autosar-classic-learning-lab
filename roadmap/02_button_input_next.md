@@ -1,36 +1,32 @@
 # 02 Button Input Next
 
-LED 단독 제어가 끝나면 버튼 입력을 추가합니다.
+다음 단계 목표는 버튼 입력으로 LED를 제어하는 것이다.
 
-## 목표 흐름
+예시 요구사항:
 
 ```text
-Virtual Button DIO input
+REQ-BTN-F-001:
+BUTTON1이 pressed 상태이면 LedCommand는 ON이어야 한다.
+
+REQ-BTN-F-002:
+BUTTON1이 released 상태이면 LedCommand는 OFF이어야 한다.
+```
+
+추가 흐름:
+
+```text
+VirtualHw BUTTON1 level
+  ↓
+Dio_ReadChannel(BOARD_DIO_BUTTON1)
   ↓
 IoHwAb_UpdateInputs()
   ↓
-RTE input buffer
+RTE ButtonState 또는 LedCommand input
   ↓
 SWC_LedControl
-  ↓
-RTE output buffer
-  ↓
-IoHwAb_UpdateOutputs()
-  ↓
-DIO LED output
 ```
 
-## 추가할 요구사항 예시
+주의:
 
-- 버튼이 눌리면 LED ON
-- 버튼이 눌리지 않으면 LED OFF
-- active-low 버튼 설정 반영
-
-## 추가할 파일 변경
-
-- `config/hardware_config.json`: `DIO_CH_BUTTON1` 활성화
-- `generated/include/EcuC_Cfg.h`: button channel define 추가
-- `generated/include/Rte.h`: `Rte_Read_Rp_ButtonState()` 추가
-- `generated/src/Rte.c`: button input buffer 추가
-- `src/bsw/IoHwAb.c`: `Dio_ReadChannel()`로 버튼 입력 읽기
-- `src/app/Swc_LedControl.c`: LED command 대신 button state 기반 판단으로 확장
+- SWC가 `Dio_ReadChannel()`을 직접 부르면 안 된다.
+- active-low 버튼은 IoHwAb에서 pressed/released로 변환한다.

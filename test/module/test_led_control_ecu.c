@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "Std_Types.h"
 #include "App_Types.h"
-#include "EcuC_Cfg.h"
+#include "Board_Cfg.h"
 #include "Ecu.h"
 #include "Rte.h"
 #include "Dio.h"
@@ -22,12 +22,13 @@ static int failures = 0;
 
 static boolean expected_hw_level_for_led_on(void)
 {
-    return (ECUC_DIO_LED1_ACTIVE_HIGH != 0u) ? TRUE : FALSE;
+    const Board_DioChannelConfigType *led_cfg = &Board_DioChannels[BOARD_DIO_LED1];
+    return (led_cfg->active_polarity == VHW_ACTIVE_HIGH) ? TRUE : FALSE;
 }
 
 static boolean expected_hw_level_for_led_off(void)
 {
-    return (ECUC_DIO_LED1_ACTIVE_HIGH != 0u) ? FALSE : TRUE;
+    return (expected_hw_level_for_led_on() == TRUE) ? FALSE : TRUE;
 }
 
 static void test_ecu_led_command_on_writes_dio_active_level(void)
@@ -39,7 +40,7 @@ static void test_ecu_led_command_on_writes_dio_active_level(void)
 
     Ecu_MainFunction_100ms();
 
-    (void)Dio_ReadChannel(ECUC_DIO_CHANNEL_LED1, &led_level);
+    (void)Dio_ReadChannel(BOARD_DIO_LED1, &led_level);
     EXPECT_EQ_INT(expected_hw_level_for_led_on(),
                   led_level,
                   "ECU LED command ON -> DIO active level");
@@ -54,7 +55,7 @@ static void test_ecu_led_command_off_writes_dio_inactive_level(void)
 
     Ecu_MainFunction_100ms();
 
-    (void)Dio_ReadChannel(ECUC_DIO_CHANNEL_LED1, &led_level);
+    (void)Dio_ReadChannel(BOARD_DIO_LED1, &led_level);
     EXPECT_EQ_INT(expected_hw_level_for_led_off(),
                   led_level,
                   "ECU LED command OFF -> DIO inactive level");
@@ -62,6 +63,8 @@ static void test_ecu_led_command_off_writes_dio_inactive_level(void)
 
 int main(void)
 {
+    (void)Ecu_Init();
+
     test_ecu_led_command_on_writes_dio_active_level();
     test_ecu_led_command_off_writes_dio_inactive_level();
 

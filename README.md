@@ -1,35 +1,53 @@
-# AUTOSAR Classic LED-first Learning Lab
+# AUTOSAR Classic Virtual Hardware Config Learning Lab
 
-이 프로젝트는 실제 AUTOSAR Classic 구현체가 아니라, AUTOSAR Classic의 구조를 작게 흉내 낸 학습용 TODO skeleton입니다.
+이 프로젝트는 실제 AUTOSAR Classic 구현체가 아니라, AUTOSAR Classic의 계층 구조를 학습하기 위한 C 기반 AUTOSAR-like lab입니다.
 
-목표는 처음부터 복잡한 Speed Warning ECU를 만들지 않고, 가장 단순한 LED 출력부터 시작해서 Button, ADC, CAN/LIN 순서로 모듈을 추가하는 것입니다.
+이번 버전의 핵심은 기존의 `EcuC_Cfg.h` 매크로 중심 설정을 줄이고, `Board_Cfg.c` 설정 테이블과 `VirtualHw` 보드 모델을 추가한 것입니다.
 
-## 01 단계: LED Control
-
-현재 활성 학습 범위는 아래 흐름입니다.
+## 핵심 구조
 
 ```text
-External/Test LED Command
+SWC
+  ↓ RTE
+IoHwAb
   ↓
-RTE input buffer
+MCAL-like Driver: Dio / Port / Adc / Pwm / Can / Lin
+  ↓
+VirtualHw
+  ↓
+Board_Cfg.c 설정 테이블 기반 가상 보드 상태
+```
+
+## 현재 완성된 기준 기능
+
+현재는 LED vertical slice 하나가 끝까지 연결되어 있습니다.
+
+```text
+Rte_Inject_LedCommand()
   ↓
 SWC_LedControl
   ↓
-RTE output buffer
+RTE LedState buffer
   ↓
-IoHwAb
+IoHwAb_UpdateOutputs()
   ↓
-Dio
+Dio_WriteChannel(BOARD_DIO_LED1, level)
   ↓
-Virtual LED hardware level
+VirtualHw 내부 LED1 pin level 변경
 ```
 
-## 핵심 규칙
+## 준비된 일반 모듈 설정
 
-- SWC는 `Dio_WriteChannel()`을 직접 호출하지 않습니다.
-- SWC는 `Rte_Read_*()`, `Rte_Write_*()`만 사용합니다.
-- 실제 핀/채널 매핑은 `config/hardware_config.json`과 `generated/include/EcuC_Cfg.h`에서 관리합니다.
-- 보드가 없어도 `Dio_ReadChannel()`로 가상 LED 출력 상태를 확인합니다.
+`config/Board_Cfg.c`에 다음 설정이 준비되어 있습니다.
+
+| 구분 | 예시 설정 | 현재 용도 |
+|---|---|---|
+| DIO output | `BOARD_DIO_LED1`, `BOARD_DIO_DEBUG_PIN` | LED 출력, 디버그 핀 |
+| DIO input | `BOARD_DIO_BUTTON1` | 다음 Button 단계 |
+| ADC | `BOARD_ADC_POT1`, `BOARD_ADC_TEMP1` | 다음 ADC 단계 |
+| PWM | `BOARD_PWM_LED_DIMMER`, `BOARD_PWM_BUZZER` | 다음 PWM 단계 |
+| CAN | `BOARD_CAN_PDU_LED_STATUS`, `BOARD_CAN_PDU_BUTTON_STATUS` | 다음 CAN TX 단계 |
+| LIN | `BOARD_LIN_FRAME_SENSOR_REQ`, `BOARD_LIN_FRAME_SENSOR_RESP` | 다음 LIN 단계 |
 
 ## 사용 방법
 
@@ -38,39 +56,28 @@ make compile
 make test
 ```
 
-처음에는 테스트가 실패하는 것이 정상입니다. TODO를 채우면서 테스트가 하나씩 통과하도록 만드는 구조입니다.
-
-설정을 바꿨다면:
+개별 테스트는 다음처럼 실행합니다.
 
 ```sh
-make gen
-make clean
-make compile
+make vhw
+make unit
+make module
 ```
 
-## 추천 구현 순서
+## 권장 학습 순서
 
-1. `docs/requirements/REQ_LED_Control_ECU.md` 확인/수정
-2. `docs/design/DESIGN_LED_Control_ECU.md` 확인/수정
-3. `generated/src/Rte.c` TODO 구현
-4. `src/app/Swc_LedControl.c` TODO 구현
-5. `make unit` 통과
-6. `src/mcal/Dio.c`, `src/mcal/Port.c` TODO 구현
-7. `src/bsw/IoHwAb.c`, `src/system/Ecu.c` TODO 구현
-8. `make module` 통과
-9. `traceability/TRACE_MATRIX.md` 채우기
-10. `roadmap/02_button_input_next.md`로 확장
+1. `config/Board_Cfg.c`에서 가상 보드 설정을 확인한다.
+2. `src/vhw/VirtualHw.c`가 설정을 어떻게 상태로 바꾸는지 확인한다.
+3. `src/mcal/Dio.c`가 VirtualHw에 어떻게 위임하는지 확인한다.
+4. `src/bsw/IoHwAb.c`에서 LED 논리 상태가 실제 DIO level로 변환되는지 확인한다.
+5. LED 요구사항/설계/테스트 추적성을 확인한다.
+6. 다음 단계로 Button 입력을 추가한다.
 
-## 확장 순서
+## 중요한 규칙
 
-```text
-01 LED output
-  ↓
-02 Button input controls LED
-  ↓
-03 ADC input controls LED policy or brightness-like state
-  ↓
-04 CAN TX sends LED state
-  ↓
-05 LIN/ADC/Button combination
-```
+- SWC는 `Dio`, `Adc`, `Pwm`, `Can`, `Lin`을 직접 호출하지 않는다.
+- SWC는 RTE만 사용한다.
+- IoHwAb는 application signal과 hardware signal 사이를 변환한다.
+- MCAL-like driver는 VirtualHw에 접근한다.
+- VirtualHw는 실제 보드가 아니라 host test용 가상 보드 모델이다.
+- 이 프로젝트를 실제 AUTOSAR Classic 구현체라고 표현하지 않는다.

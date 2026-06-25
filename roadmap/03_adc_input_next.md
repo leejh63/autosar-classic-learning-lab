@@ -1,24 +1,27 @@
 # 03 ADC Input Next
 
-Button 입력 이후 ADC 입력을 추가합니다.
+ADC 입력으로 LED 정책을 바꾸는 단계다.
 
-## 목표 흐름
+예시 요구사항:
 
 ```text
-Virtual ADC raw value
+REQ-ADC-F-001:
+POT1 raw value가 3000 이상이면 LED 상태는 ON이어야 한다.
+
+REQ-ADC-F-002:
+POT1 raw value가 3000 미만이면 LED 상태는 OFF이어야 한다.
+```
+
+추가 흐름:
+
+```text
+VirtualHw ADC raw
   ↓
-Adc_ReadChannel()
+Adc_ReadChannel(BOARD_ADC_POT1)
   ↓
 IoHwAb_UpdateInputs()
   ↓
-RTE input buffer
+RTE AdcSignal
   ↓
 SWC policy
 ```
-
-## 학습 포인트
-
-- raw ADC 값과 application 값 분리
-- threshold 요구사항 작성
-- invalid/fault 정책 설계
-- 단위 테스트와 모듈 테스트 분리

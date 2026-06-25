@@ -1,42 +1,34 @@
-#include "Std_Types.h"
-#include "App_Types.h"
-#include "EcuC_Cfg.h"
+#include "IoHwAb.h"
 #include "Rte.h"
 #include "Dio.h"
-#include "IoHwAb.h"
+#include "Board_Cfg.h"
 
-Std_ReturnType IoHwAb_UpdateInputs(void)
+static boolean led_state_to_dio_level(LedStateType state)
 {
-    /*
-     * LED-only 단계에서는 하드웨어 입력이 없습니다.
-     * 다음 단계에서 Button 입력을 추가하면 여기에서 Dio_ReadChannel()을 호출하고
-     * RTE input buffer로 값을 넣는 흐름을 만들게 됩니다.
-     */
-    return E_OK;
+    const Board_DioChannelConfigType *led_cfg = &Board_DioChannels[BOARD_DIO_LED1];
+    boolean active_level = (led_cfg->active_polarity == VHW_ACTIVE_HIGH) ? TRUE : FALSE;
+    boolean inactive_level = (active_level == TRUE) ? FALSE : TRUE;
+
+    return (state == LED_STATE_ON) ? active_level : inactive_level;
 }
 
-Std_ReturnType IoHwAb_UpdateOutputs(void)
+void IoHwAb_UpdateInputs(void)
 {
-    LedStateType led_state = LED_STATE_OFF;
-    boolean hw_level = FALSE;
-
-    /* TODO(STEP-IOHWAB-LED-001):
-     * Rte_Observe_LedState()로 SWC 출력값을 읽으세요.
+    /*
+     * LED-only 단계에서는 입력 하드웨어가 없다.
+     * 다음 단계에서 BUTTON1을 읽어 RTE input으로 올리는 경로를 추가한다.
      */
+}
 
-    /* TODO(STEP-IOHWAB-LED-002):
-     * LED_STATE_ON/OFF를 실제 DIO level로 변환하세요.
-     * hint:
-     * - active-high LED: ON -> TRUE, OFF -> FALSE
-     * - active-low LED : ON -> FALSE, OFF -> TRUE
-     * - ECUC_DIO_LED1_ACTIVE_HIGH 값을 사용하세요.
-     */
+void IoHwAb_UpdateOutputs(void)
+{
+    LedStateType state = LED_STATE_OFF;
+    boolean dio_level = FALSE;
 
-    /* TODO(STEP-IOHWAB-LED-003):
-     * Dio_WriteChannel(ECUC_DIO_CHANNEL_LED1, hw_level)를 호출하세요.
-     */
+    if (Rte_Bsw_Read_LedState(&state) != E_OK) {
+        return;
+    }
 
-    (void)led_state;
-    (void)hw_level;
-    return E_NOT_OK;
+    dio_level = led_state_to_dio_level(state);
+    (void)Dio_WriteChannel(BOARD_DIO_LED1, dio_level);
 }
