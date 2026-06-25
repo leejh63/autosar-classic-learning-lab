@@ -3,9 +3,9 @@
 #include "Dio.h"
 #include "Board_Cfg.h"
 
-static boolean led_state_to_dio_level(LedStateType state)
+static boolean led_state_to_dio_level(LedStateType state, uint8_t channel)
 {
-    const Board_DioChannelConfigType *led_cfg = &Board_DioChannels[BOARD_DIO_LED1];
+    const Board_DioChannelConfigType *led_cfg = &Board_DioChannels[channel];
     boolean active_level = (led_cfg->active_polarity == VHW_ACTIVE_HIGH) ? TRUE : FALSE;
     boolean inactive_level = (active_level == TRUE) ? FALSE : TRUE;
 
@@ -29,6 +29,26 @@ void IoHwAb_UpdateOutputs(void)
         return;
     }
 
-    dio_level = led_state_to_dio_level(state);
+    dio_level = led_state_to_dio_level(state, BOARD_DIO_LED1);
     (void)Dio_WriteChannel(BOARD_DIO_LED1, dio_level);
+}
+
+void IoHwAb_UpdateRgbOutputs(void)
+{
+    RgbLedStateType state = {
+        .red = LED_STATE_OFF,
+        .blue = LED_STATE_OFF,
+        .green = LED_STATE_OFF
+    };
+
+    if (Rte_Bsw_Read_RgbLedState(&state) != E_OK) {
+        return;
+    }
+
+    (void)Dio_WriteChannel(BOARD_DIO_LED1,
+                           led_state_to_dio_level(state.red, BOARD_DIO_LED1));
+    (void)Dio_WriteChannel(BOARD_DIO_LED2,
+                           led_state_to_dio_level(state.blue, BOARD_DIO_LED2));
+    (void)Dio_WriteChannel(BOARD_DIO_LED3,
+                           led_state_to_dio_level(state.green, BOARD_DIO_LED3));
 }

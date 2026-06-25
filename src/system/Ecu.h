@@ -5,6 +5,7 @@
 
 Std_ReturnType Ecu_Init(void);
 void Ecu_MainFunction_100ms(void);
+void Ecu_MainFunction_Rgb_100ms(void);
 void Ecu_ResetForTest(void);
 
 #endif /* ECU_H */
