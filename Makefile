@@ -4,20 +4,26 @@ INCLUDES := -Iinclude -Iconfig -Igenerated/include -Isrc/app -Isrc/bsw -Isrc/mca
 
 BUILD_DIR := build
 
-CONFIG_SRC := config/Board_Cfg.c
-VHW_SRC := src/vhw/VirtualHw.c
-RTE_SRC := generated/src/Rte.c
-SWC_SRC := src/app/Swc_LedControl.c
-BSW_SRC := src/bsw/IoHwAb.c
-MCAL_SRC := src/mcal/Dio.c src/mcal/Port.c src/mcal/Adc.c src/mcal/Pwm.c src/mcal/Can.c src/mcal/Lin.c
-SYSTEM_SRC := src/system/Ecu.c
+CONFIG_SRC := $(sort $(wildcard config/*.c))
+VHW_SRC := $(sort $(wildcard src/vhw/*.c))
+RTE_SRC := $(sort $(wildcard generated/src/*.c))
+APP_SRC := $(sort $(wildcard src/app/*.c))
+BSW_SRC := $(sort $(wildcard src/bsw/*.c))
+MCAL_SRC := $(sort $(wildcard src/mcal/*.c))
+SYSTEM_SRC := $(sort $(wildcard src/system/*.c))
 
 COMMON_INFRA_SRC := $(CONFIG_SRC) $(VHW_SRC) $(MCAL_SRC)
-APP_STACK_SRC := $(RTE_SRC) $(SWC_SRC) $(BSW_SRC) $(SYSTEM_SRC)
+APP_STACK_SRC := $(RTE_SRC) $(APP_SRC) $(BSW_SRC) $(SYSTEM_SRC)
+COMPILE_SRC := $(COMMON_INFRA_SRC) $(APP_STACK_SRC)
+COMPILE_OBJ := $(patsubst %.c,$(BUILD_DIR)/%.o,$(COMPILE_SRC))
 
-VHW_BIN := $(BUILD_DIR)/virtual_hw_test
-UNIT_BIN := $(BUILD_DIR)/unit_test
-MODULE_BIN := $(BUILD_DIR)/module_test
+VHW_TEST_SRC := $(sort $(wildcard test/vhw/*.c))
+UNIT_TEST_SRC := $(sort $(wildcard test/unit/*.c))
+MODULE_TEST_SRC := $(sort $(wildcard test/module/*.c))
+
+VHW_TEST_BIN := $(patsubst test/vhw/%.c,$(BUILD_DIR)/vhw/%,$(VHW_TEST_SRC))
+UNIT_TEST_BIN := $(patsubst test/unit/%.c,$(BUILD_DIR)/unit/%,$(UNIT_TEST_SRC))
+MODULE_TEST_BIN := $(patsubst test/module/%.c,$(BUILD_DIR)/module/%,$(MODULE_TEST_SRC))
 
 .PHONY: all compile test vhw unit module clean todo tree
 
@@ -26,38 +32,33 @@ all: compile
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-compile: $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $(CONFIG_SRC) -o $(BUILD_DIR)/Board_Cfg.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c $(VHW_SRC) -o $(BUILD_DIR)/VirtualHw.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c $(RTE_SRC) -o $(BUILD_DIR)/Rte.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c $(SWC_SRC) -o $(BUILD_DIR)/Swc_LedControl.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c src/bsw/IoHwAb.c -o $(BUILD_DIR)/IoHwAb.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c src/mcal/Dio.c -o $(BUILD_DIR)/Dio.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c src/mcal/Port.c -o $(BUILD_DIR)/Port.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c src/mcal/Adc.c -o $(BUILD_DIR)/Adc.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c src/mcal/Pwm.c -o $(BUILD_DIR)/Pwm.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c src/mcal/Can.c -o $(BUILD_DIR)/Can.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c src/mcal/Lin.c -o $(BUILD_DIR)/Lin.o
-	$(CC) $(CFLAGS) $(INCLUDES) -c src/system/Ecu.c -o $(BUILD_DIR)/Ecu.o
+compile: $(COMPILE_OBJ)
 	@echo "compile OK"
 
-$(VHW_BIN): $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) test/vhw/test_virtual_hw.c $(COMMON_INFRA_SRC) -o $(VHW_BIN)
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-$(UNIT_BIN): $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) test/unit/test_swc_led_control.c $(RTE_SRC) $(SWC_SRC) -o $(UNIT_BIN)
+$(BUILD_DIR)/vhw/%: test/vhw/%.c $(COMMON_INFRA_SRC) | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@
 
-$(MODULE_BIN): $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) test/module/test_led_control_ecu.c $(COMMON_INFRA_SRC) $(APP_STACK_SRC) -o $(MODULE_BIN)
+$(BUILD_DIR)/unit/%: test/unit/%.c $(RTE_SRC) $(APP_SRC) | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@
 
-vhw: $(VHW_BIN)
-	./$(VHW_BIN)
+$(BUILD_DIR)/module/%: test/module/%.c $(COMMON_INFRA_SRC) $(APP_STACK_SRC) | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@
 
-unit: $(UNIT_BIN)
-	./$(UNIT_BIN)
+vhw: $(VHW_TEST_BIN)
+	@set -e; for test_bin in $(VHW_TEST_BIN); do ./$$test_bin; done
 
-module: $(MODULE_BIN)
-	./$(MODULE_BIN)
+unit: $(UNIT_TEST_BIN)
+	@set -e; for test_bin in $(UNIT_TEST_BIN); do ./$$test_bin; done
+
+module: $(MODULE_TEST_BIN)
+	@set -e; for test_bin in $(MODULE_TEST_BIN); do ./$$test_bin; done
 
 test: vhw unit module
 
