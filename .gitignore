@@ -1,0 +1,29 @@
+# Build outputs
+build/
+*.o
+*.out
+*.elf
+*.map
+*.hex
+*.bin
+*.a
+
+# Coverage/test artifacts
+*.gcda
+*.gcno
+*.gcov
+
+# Local tool/editor files
+compile_commands.json
+.cache/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+
+# Local Codex guidance
+AGENTS.md
